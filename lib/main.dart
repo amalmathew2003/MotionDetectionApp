@@ -18,7 +18,7 @@ void main() async {
   runApp(const MaterialApp(home: GuardApp()));
 }
 
-/// ✅ Create a notification channel (required for Android 12+)
+/// ✅ Create a notification channel (Android 12+ requirement)
 Future<void> setupNotificationChannel() async {
   const AndroidNotificationChannel channel = AndroidNotificationChannel(
     'motion_guard_channel',
@@ -29,8 +29,7 @@ Future<void> setupNotificationChannel() async {
 
   final androidPlugin = flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin
-      >();
+          AndroidFlutterLocalNotificationsPlugin>();
 
   if (androidPlugin != null) {
     await androidPlugin.createNotificationChannel(channel);
@@ -66,7 +65,7 @@ void onStart(ServiceInstance service) async {
   }
 
   List<double> last = [0, 0, 0];
-  double threshold = 3.5;
+  const double threshold = 3.5;
   int lastTrigger = 0;
   Timer? stopTimer;
 
@@ -80,19 +79,26 @@ void onStart(ServiceInstance service) async {
 
     if (mag > threshold && now - lastTrigger > 4000) {
       lastTrigger = now;
+
+      // ✅ Start alarm sound
       await player.setVolume(1.0);
       await player.setReleaseMode(ReleaseMode.loop);
       await player.play(AssetSource('audio/alarm.mp3'));
 
-      // 🔔 Auto-stop after 10 seconds
+      // 🔔 Auto-stop alarm after 10 seconds
       stopTimer?.cancel();
-      stopTimer = Timer(const Duration(seconds: 50), () async {
+      stopTimer = Timer(const Duration(seconds: 10), () async {
         await player.stop();
       });
     }
   });
 
-  // Allow manual stop
+  // ✅ Stop alarm when main app resumes (e.g., phone unlock)
+  service.on('stopAlarm').listen((event) async {
+    await player.stop();
+  });
+
+  // ✅ Stop service manually
   service.on('stopService').listen((event) async {
     stopTimer?.cancel();
     await player.stop();
@@ -100,7 +106,7 @@ void onStart(ServiceInstance service) async {
   });
 }
 
-/// ✅ UI to start/stop monitoring
+/// ✅ Main app UI
 class GuardApp extends StatefulWidget {
   const GuardApp({super.key});
 
@@ -111,7 +117,6 @@ class GuardApp extends StatefulWidget {
 class _GuardAppState extends State<GuardApp> with WidgetsBindingObserver {
   bool running = false;
   final service = FlutterBackgroundService();
-  AudioPlayer? _player;
 
   @override
   void initState() {
@@ -125,12 +130,11 @@ class _GuardAppState extends State<GuardApp> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  /// ✅ When user unlocks and app resumes → stop alarm
+  /// ✅ When phone unlocks → tell background service to stop alarm
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (state == AppLifecycleState.resumed) {
-      _player ??= AudioPlayer();
-      await _player!.stop();
+      service.invoke('stopAlarm');
     }
   }
 
