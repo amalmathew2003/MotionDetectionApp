@@ -27,9 +27,10 @@ Future<void> setupNotificationChannel() async {
     importance: Importance.low,
   );
 
-  final AndroidFlutterLocalNotificationsPlugin? androidPlugin =
-      flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+  final androidPlugin = flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >();
 
   if (androidPlugin != null) {
     await androidPlugin.createNotificationChannel(channel);
@@ -79,19 +80,19 @@ void onStart(ServiceInstance service) async {
 
     if (mag > threshold && now - lastTrigger > 4000) {
       lastTrigger = now;
-      await Future.delayed(const Duration(milliseconds: 200));
       await player.setVolume(1.0);
       await player.setReleaseMode(ReleaseMode.loop);
       await player.play(AssetSource('audio/alarm.mp3'));
 
-      // Stop alarm automatically after 10 seconds
+      // 🔔 Auto-stop after 10 seconds
       stopTimer?.cancel();
-      stopTimer = Timer(const Duration(seconds: 10), () async {
+      stopTimer = Timer(const Duration(seconds: 50), () async {
         await player.stop();
       });
     }
   });
 
+  // Allow manual stop
   service.on('stopService').listen((event) async {
     stopTimer?.cancel();
     await player.stop();
@@ -107,12 +108,34 @@ class GuardApp extends StatefulWidget {
   State<GuardApp> createState() => _GuardAppState();
 }
 
-class _GuardAppState extends State<GuardApp> {
+class _GuardAppState extends State<GuardApp> with WidgetsBindingObserver {
   bool running = false;
+  final service = FlutterBackgroundService();
+  AudioPlayer? _player;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// ✅ When user unlocks and app resumes → stop alarm
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    if (state == AppLifecycleState.resumed) {
+      _player ??= AudioPlayer();
+      await _player!.stop();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final service = FlutterBackgroundService();
     return Scaffold(
       appBar: AppBar(title: const Text('Motion Guard'), centerTitle: true),
       body: Center(
@@ -138,7 +161,6 @@ class _GuardAppState extends State<GuardApp> {
             const SizedBox(height: 30),
             ElevatedButton(
               onPressed: () async {
-                // Test the alarm manually
                 final testPlayer = AudioPlayer();
                 await testPlayer.setVolume(1.0);
                 await testPlayer.play(AssetSource('audio/alarm.mp3'));
