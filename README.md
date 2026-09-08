@@ -11,6 +11,11 @@
 
 **A Flutter security utility that watches your device's accelerometer and raises an alarm the moment it's moved, lifted, or tampered with — even while running in the background.**
 
+### 📥 [**Download APK**](https://github.com/amalmathew2003/MotionDetectionApp/releases/latest)
+
+[![Download](https://img.shields.io/badge/Download-APK-success?style=for-the-badge&logo=android&logoColor=white)](https://github.com/amalmathew2003/MotionDetectionApp/releases/latest)
+[![Latest Release](https://img.shields.io/github/v/release/amalmathew2003/MotionDetectionApp?style=for-the-badge&label=Latest&color=blue)](https://github.com/amalmathew2003/MotionDetectionApp/releases/latest)
+
 ```
   ⚪  STANDBY   ───▶   🟣  ARMED   ───▶   🔴  ALARM!
 ```
@@ -116,6 +121,12 @@ lib/
 
 ## 🚀 Run It
 
+### Option 1 — Install the APK directly
+1. Go to [**Releases**](https://github.com/amalmathew2003/MotionDetectionApp/releases/latest)
+2. Download `app-release.apk`
+3. Install it on your Android device (enable "Install from unknown sources" if prompted)
+
+### Option 2 — Build from source
 ```bash
 git clone https://github.com/amalmathew2003/motion_detection_app.git
 cd motion_detection_app
